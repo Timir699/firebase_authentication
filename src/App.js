@@ -10,6 +10,8 @@ initializeFirebase()
 function App() {
   const [loggedInUser, setLoggedInUser] = useState({})
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [userData, setUserData] = useState({
     name: '',
     email: '',
@@ -56,11 +58,16 @@ function App() {
 
   const formhandler = (e) => {
     e.preventDefault()
-    const { email, password } = userData;
+    const { name, email, password } = userData;
+    if (password.length < 6) {
+      setError('password must be 6 characters')
+      return
+    }
     createUserWithEmailAndPassword(auth, email, password)
       .then(result => {
         const user = result.user
         console.log(user);
+        setSuccess('Account Created Successfully')
       })
       .catch(error => console.log(error.message))
   }
@@ -72,9 +79,16 @@ function App() {
     })
   }
 
-
   return (
     <div className="App">
+
+      {loggedInUser.email && <div className="text-center">
+        <h2>Name: {loggedInUser.name}</h2>
+        <h2>Email: {loggedInUser.email}</h2>
+        <img src={loggedInUser.img} alt="" />
+      </div>}
+
+
       <div className="text-center mt-12">
         <div className="w-2/6 mx-auto">
           <form onSubmit={formhandler} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -107,6 +121,8 @@ function App() {
                 {!isLoggedIn ? 'Allready signed up! just click here to login' : ' Dont have an account? click here to signup.'}
               </span>
             </label>
+            <p className="mb-5 text-red-500"> {error}</p>
+            <p className="mb-5 text-green-500"> {success}</p>
             <div className="flex items-center justify-center">
               <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline text-center">
                 {isLoggedIn ? 'Sign in' : 'Sign up'}
@@ -117,11 +133,7 @@ function App() {
         </div>
       </div>
 
-      {loggedInUser.name && <div>
-        <h2>Name: {loggedInUser.name}</h2>
-        <h2>Email: {loggedInUser.email}</h2>
-        <img src={loggedInUser.img} alt="" />
-      </div>}
+
 
     </div>
   );
