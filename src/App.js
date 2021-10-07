@@ -1,4 +1,4 @@
-import { getAuth, signInWithPopup, GoogleAuthProvider, GithubAuthProvider, createUserWithEmailAndPassword } from "firebase/auth";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, GithubAuthProvider, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from "firebase/auth";
 import initializeFirebase from "./firebase/firebase.init";
 import './App.css';
 import { useState } from "react";
@@ -22,7 +22,7 @@ function App() {
   const githubProvider = new GithubAuthProvider();
 
   const auth = getAuth();
-
+  const { email, password } = userData;
   const handleGoogle = () => {
     signInWithPopup(auth, googleProvider)
       .then(result => {
@@ -51,25 +51,54 @@ function App() {
       .catch(error => console.log(error.message))
   }
 
-  const loginHandler = (e) => {
+  const checkHandler = (e) => {
     setIsLoggedIn(e.target.checked);
     console.log(isLoggedIn);
   }
 
-  const formhandler = (e) => {
+  const formHandler = (e) => {
     e.preventDefault()
-    const { name, email, password } = userData;
+
     if (password.length < 6) {
       setError('password must be 6 characters')
       return
     }
+    isLoggedIn ? loginHandler(email, password) : createUser(email, password)
+
+  }
+  const createUser = (email, password) => {
     createUserWithEmailAndPassword(auth, email, password)
+      .then(result => {
+        setSuccess('')
+        const user = result.user
+        console.log(user);
+        setError('')
+        setSuccess('Account Created Successfully')
+        verifyEmail()
+      })
+      .catch(error => setError(error.message))
+  }
+  const loginHandler = (email, password) => {
+    signInWithEmailAndPassword(auth, email, password)
       .then(result => {
         const user = result.user
         console.log(user);
-        setSuccess('Account Created Successfully')
+        setError('')
+
       })
-      .catch(error => console.log(error.message))
+      .catch(error => {
+        setError(error.message)
+      })
+  }
+  const verifyEmail = () => {
+    sendEmailVerification(auth.currentUser)
+      .then(result => {
+        console.log(result);
+      })
+  }
+  const passwordReset = () => {
+    sendPasswordResetEmail(auth, email)
+      .then(result => console.log(result))
   }
 
   const inputHandler = (e) => {
@@ -78,6 +107,8 @@ function App() {
       [e.target.name]: e.target.value
     })
   }
+
+
 
   return (
     <div className="App">
@@ -91,7 +122,7 @@ function App() {
 
       <div className="text-center mt-12">
         <div className="w-2/6 mx-auto">
-          <form onSubmit={formhandler} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+          <form onSubmit={formHandler} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
             {!isLoggedIn ? <><label className="block text-gray-500 text-sm font-bold mb-2" for="name">
               UserName
             </label><input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="username" type="text" placeholder="Username"
@@ -115,17 +146,21 @@ function App() {
               <FcGoogle style={{ cursor: "pointer" }} className="text-4xl inline mr-2" onClick={handleGoogle} />
               <BsGithub style={{ cursor: "pointer" }} className="text-4xl inline" onClick={handleGithub} />
             </div>
-            <label class="md:w-3/3 block text-gray-500 font-bold mb-3" onClick={loginHandler}>
+            <label class="md:w-3/3 block text-gray-500 font-bold mb-3" onClick={checkHandler}>
               <input class="mr-2 leading-tight" type="checkbox" />
               <span class="text-sm">
                 {!isLoggedIn ? 'Allready signed up! just click here to login' : ' Dont have an account? click here to signup.'}
               </span>
             </label>
+
             <p className="mb-5 text-red-500"> {error}</p>
             <p className="mb-5 text-green-500"> {success}</p>
             <div className="flex items-center justify-center">
               <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline text-center">
                 {isLoggedIn ? 'Sign in' : 'Sign up'}
+              </button>
+              <button onClick={passwordReset} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline text-center">
+                reset password
               </button>
             </div>
           </form>
